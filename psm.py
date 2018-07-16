@@ -2,6 +2,8 @@ import cerberus
 import json
 
 def is_builtin_name(s):
+    if not isinstance(s, str):
+        return False
     if len(s) > 4 and s[0] == '_' and s[1] == '_' and s[-1] == '_' and s[-2] == '_':
         return True
     return False
