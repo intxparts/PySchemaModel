@@ -140,14 +140,14 @@ class IntegerField(DataField):
 
 class FloatField(DataField):
     def __init__(
-            self,
-            required = False,
-            nullable = False,
-            allowed = [],
-            forbidden = [],
-            _min = _MIN_INT,
-            _max = _MAX_INT
-        ):
+        self,
+        required = False,
+        nullable = False,
+        allowed = [],
+        forbidden = [],
+        _min = _MIN_INT,
+        _max = _MAX_INT
+    ):
         super().__init__(required, nullable, allowed, forbidden)
         self.min = _min
         self.max = _max
@@ -168,15 +168,15 @@ class FloatField(DataField):
 
 class ListField(DataField):
     def __init__(
-            self,
-            type_mapping,
-            required = False,
-            nullable = False,
-            allowed = [],
-            forbidden = [],
-            min_length = 0,
-            max_length = _MAX_INT
-        ):
+        self,
+        type_mapping,
+        required = False,
+        nullable = False,
+        allowed = [],
+        forbidden = [],
+        min_length = 0,
+        max_length = _MAX_INT
+    ):
         super().__init__(required, nullable, allowed, forbidden)
         if not isinstance(type_mapping, list):
             raise TypeError('"type_mapping" must be a list of data field types')
@@ -377,37 +377,3 @@ def deserialize(cls, json_string):
         raise ValidationError(errors)
     return obj
 
-class AnotherModel(SchemaModel):
-    my_int = IntegerField(required=True, nullable=False, _min=-1, _max=30)
-    my_bool = BoolField(required=False, nullable=True)
-
-
-class MyModel(SchemaModel, allow_unknowns=True):
-    a_param = BoolField()
-    another_p = ObjectField(AnotherModel, required=True, nullable=False)
-
-
-a = AnotherModel(my_int = 1, my_bool = False)
-print(dir(a))
-print(a.__allow_unknowns)
-
-b = MyModel(a_param=False, another_p=a)
-print(a.validate())
-print(b.validate())
-# c = serialize(a)
-# print(c)
-# e = deserialize(AnotherModel, c)
-# print(e)
-# print(vars(e))
-# print(e.to_json_obj())
-
-d = serialize(b)
-print(d)
-f = deserialize(MyModel, d)
-print(f)
-print(vars(f))
-print(f.to_json_obj())
-# print(b.__allow_unknowns)
-# print(vars(a))
-# print(a.__schema)
-# print(a.validate())
