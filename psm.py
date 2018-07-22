@@ -4,7 +4,7 @@ import sys
 _MAX_INT = sys.maxsize
 _MIN_INT = -sys.maxsize - 1
 
-def is_builtin_name(s):
+def _is_builtin_name(s):
     if not isinstance(s, str):
         return False
     if len(s) > 4 and s[0] == '_' and s[1] == '_' and s[-1] == '_' and s[-2] == '_':
@@ -14,12 +14,12 @@ def is_builtin_name(s):
 
 class DataField:
     def __init__(
-            self,
-            required = False,
-            nullable = False,
-            allowed = [],
-            forbidden = []
-        ):
+        self,
+        required = False,
+        nullable = False,
+        allowed = [],
+        forbidden = []
+    ):
         self.required = required
         self.nullable = nullable
         self.allowed = allowed
@@ -73,9 +73,9 @@ class DataField:
 
 class BoolField(DataField):
     def __init__(self,
-            required = False,
-            nullable = False
-        ):
+        required = False,
+        nullable = False
+    ):
         super().__init__(required, nullable)
 
     def _check_permitted(self, name, v):
@@ -92,12 +92,12 @@ class BoolField(DataField):
 
 class StringField(DataField):
     def __init__(
-            self,
-            required = False,
-            nullable = False,
-            allowed = [],
-            forbidden = []
-        ):
+        self,
+        required = False,
+        nullable = False,
+        allowed = [],
+        forbidden = []
+    ):
         super().__init__(required, nullable, allowed, forbidden)
     
     def _check_instance(self, v):
@@ -112,14 +112,14 @@ class StringField(DataField):
 
 class IntegerField(DataField):
     def __init__(
-            self,
-            required = False,
-            nullable = False,
-            allowed = [],
-            forbidden = [],
-            _min = _MIN_INT,
-            _max = _MAX_INT
-        ):
+        self,
+        required = False,
+        nullable = False,
+        allowed = [],
+        forbidden = [],
+        _min = _MIN_INT,
+        _max = _MAX_INT
+    ):
         super().__init__(required, nullable, allowed, forbidden)
         self.min = _min
         self.max = _max
@@ -186,12 +186,17 @@ class ListField(DataField):
             if not isinstance(t, DataField):
                 raise TypeError(str.format('invalid type: {}, provided for "type_mapping", type must derive from DataField', type(t)))
         self.type_mapping = type_mapping
-        self.max_length = max_length
         self.min_length = min_length
+        self.max_length = max_length
 
     def _check_instance(self, name, v):
         errors = []
         result = True
+
+        if not isinstance(v, list):
+            result = False
+            errors.append(str.format('Field "{}" must be a list', name))
+            return result, errors
 
         if len(type_mapping) == 1:
             for i in v:
@@ -209,19 +214,50 @@ class ListField(DataField):
         if len(v) > self.max_length:
             result = False
             errors.append(str.format('List Field "{}" exceeded its maximum length: {}, with length: {}', name, self.max_length, len(v)))
+        if len(v) < self.min_length:
+            result = False
+            errors.append(str.format('List Field "{}" does not satisfy the length requirement: {}, with length: {}', name, self.min_length, len(v)))
 
         return result, errors
 
 class DictField(DataField):
-    pass
+    def __init__(
+        self,
+        key_type,
+        value_type,
+        required = False,
+        nullable = False
+    ):
+        super().__init__(required, nullable)
+        self.key_type = key_type
+        self.value_type = value_type
+    
+    def _check_instance(self, name, value):
+        errors = []
+        result = True
+
+        if not isinstance(value, dict):
+            result = True
+            errors.append(str.format('Field "{}" must be a dict', name))
+            return result, errors
+
+        for k, v in value.items():
+            if not isinstance(k, self.key_type):
+                result = False
+                errors.append(str.format('key type: {} for Field "{}" must be of type: {}', type(k).__name__, name, type(key_type).__name__))
+            if not isinstance(v, self.value_type):
+                result = False
+                errors.append(str.format('value type: {} for Field "{}" must be of type: {}', type(v).__name__, name, type(value_type).__name__))
+
+        return result, errors
 
 class ObjectField(DataField):
     def __init__(
-            self, 
-            cls,
-            required = False,
-            nullable = False
-        ):
+        self, 
+        cls,
+        required = False,
+        nullable = False
+    ):
         super().__init__(required, nullable)
         self.cls = cls
 
@@ -248,19 +284,17 @@ class ValidationError(Exception):
 
 class Schema(type):
     def __new__(metaclass, metaclass_name, bases, namespace, **options):
-        print('new', options)
         new_namespace = {}
         new_namespace['__schema'] = {}
         new_namespace['__allow_unknowns'] = options.get('allow_unknowns', False)
         for k, v in namespace.items():
-            if not is_builtin_name(k):
+            if not _is_builtin_name(k):
                 if isinstance(v, DataField):
                     new_namespace['__schema'][k] = v
                 else:
                     new_namespace[k] = v
             else:
                 new_namespace[k] = v
-        print('new_namespace', new_namespace)
         return super().__new__(metaclass, metaclass_name, bases, new_namespace)
 
     def __init__(cls, cls_name, bases, namespace, **options):
