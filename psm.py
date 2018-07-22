@@ -272,6 +272,15 @@ class SchemaModel(metaclass=Schema, allow_unknowns=False):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+    def to_json_obj(self):
+        d = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, SchemaModel):
+                d[k] = v.to_json_obj()
+            else:
+                d[k] = v
+        return d
+
     def validate(self):
         result = True
         errors = []
@@ -307,8 +316,19 @@ def serialize(obj):
     result, errors = obj.validate()
     if not result:
         raise ValidationError(errors)
-    return json.dumps(vars(obj))
+    return json.dumps(obj.to_json_obj())
 
+
+def _instantiate_class(cls, d):
+    obj = cls()
+    schema = getattr(cls, '__schema')
+    for k, v in schema.items():
+        if k in d:
+            if isinstance(v, ObjectField):
+                obj.__dict__[k] = _instantiate_class(v.cls, d[k])
+            else:
+                obj.__dict__[k] = d[k]
+    return obj
 
 def deserialize(cls, json_string):
     if not issubclass(cls, SchemaModel):
@@ -316,7 +336,7 @@ def deserialize(cls, json_string):
     d = json.loads(json_string)
     # create an instance of the given class
     # populate that instance with the data from the json dict
-    obj = cls(**d)
+    obj = _instantiate_class(cls, d)
 
     result, errors = obj.validate()
     if not result:
@@ -340,6 +360,19 @@ print(a.__allow_unknowns)
 b = MyModel(a_param=False, another_p=a)
 print(a.validate())
 print(b.validate())
+# c = serialize(a)
+# print(c)
+# e = deserialize(AnotherModel, c)
+# print(e)
+# print(vars(e))
+# print(e.to_json_obj())
+
+d = serialize(b)
+print(d)
+f = deserialize(MyModel, d)
+print(f)
+print(vars(f))
+print(f.to_json_obj())
 # print(b.__allow_unknowns)
 # print(vars(a))
 # print(a.__schema)
