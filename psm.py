@@ -25,19 +25,6 @@ class DataField:
         self.allowed = allowed
         self.forbidden = forbidden
 
-    def _check_nullable(self, name, v):
-        errors = []
-        result = True
-
-        if self.nullable and v == None:
-            return result, errors
-
-        if not self.nullable and v == None:
-            result = False
-            errors.append(str.format('Field "{}" is not nullable', name))
-        
-        return result, errors
-
     def _check_permitted(self, name, v):
         errors = []
         result = True
@@ -52,9 +39,11 @@ class DataField:
         return True, []
 
     def is_valid(self, name, v):
-        null_check, null_check_errors = self._check_nullable(name, v)
-        if not null_check:
-            return null_check, null_check_errors
+        if self.nullable and v == None:
+            return True, []
+
+        if not self.nullable and v == None:
+            return False, [str.format('Field "{}" is not nullable', name)]
 
         errors = []
         result = True
@@ -322,15 +311,10 @@ class SchemaModel(metaclass=Schema, allow_unknowns=False):
         keys = self.__dict__.keys()
         for k, v in schema.items():
             if k in keys:
-                if not v.nullable and self.__dict__[k] == None:
-                    errors.append(str.format('field is not nullable: {}', k))
-                    result = False
-                
                 subresult, suberrors = v.is_valid(k, self.__dict__[k])
                 if not subresult:
                     result = False
                     errors.extend(suberrors)
-
             else:
                 if v.required:
                     errors.append(str.format('required field is missing: {}', k))
