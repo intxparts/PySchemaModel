@@ -61,6 +61,71 @@ class BoolField_tests(unittest.TestCase):
         self.assertTrue(nonnull_result)
         self.assertEqual(0, len(nonnull_errors))
 
+    def test_serialize_nullable_bool(self):
+        class Model(psm.SchemaModel):
+            field = psm.BoolField(nullable=True)
+        
+        m1 = Model(field=None)
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"field": null}', m1_str)
+
+        m2 = Model(field=False)
+        m2_str = psm.serialize(m2)
+        self.assertEqual('{"field": false}', m2_str)
+
+        m3 = Model(field=True)
+        m3_str = psm.serialize(m3)
+        self.assertEqual('{"field": true}', m3_str)
+
+    def test_deserialize_nullable_bool(self):
+        class Model(psm.SchemaModel):
+            field = psm.BoolField(nullable=True)
+
+        null_model = psm.deserialize(Model, '{"field": null}')
+        self.assertEqual(None, null_model.field)
+
+        false_model = psm.deserialize(Model, '{"field": false}')
+        self.assertEqual(False, false_model.field)
+
+        true_model = psm.deserialize(Model, '{"field": true}')
+        self.assertEqual(True, true_model.field)
+
+        # additional fields
+        with self.assertRaises(psm.ValidationError):
+            psm.deserialize(Model, '{"field": null, "greeting": "hello"}')
+
+        # missing fields
+        with self.assertRaises(psm.ValidationError):
+            psm.deserialize(Model, '{"another_field": null}')
+
+    def test_serialize_bool(self):
+        class Model(psm.SchemaModel):
+            field = psm.BoolField(nullable=False)
+        
+        m1 = Model(field=None)
+        with self.assertRaises(psm.ValidationError):
+            psm.serialize(m1)
+
+        m2 = Model(field=False)
+        m2_str = psm.serialize(m2)
+        self.assertEqual('{"field": false}', m2_str)
+
+        m3 = Model(field=True)
+        m3_str = psm.serialize(m3)
+        self.assertEqual('{"field": true}', m3_str)
+
+    def test_deserialize_bool(self):
+        class Model(psm.SchemaModel):
+            field = psm.BoolField(nullable=False)
+
+        with self.assertRaises(psm.ValidationError):
+            null_model = psm.deserialize(Model, '{"field": null}')
+
+        false_model = psm.deserialize(Model, '{"field": false}')
+        self.assertEqual(False, false_model.field)
+
+        true_model = psm.deserialize(Model, '{"field": true}')
+        self.assertEqual(True, true_model.field)
 
 
 if __name__ == '__main__':
