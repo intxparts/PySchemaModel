@@ -25,12 +25,12 @@ class DataField:
         self.allowed = allowed
         self.forbidden = forbidden
 
-    def _check_permitted(self, name, v):
-        if (len(self.allowed) > 0 and not v in self.allowed) or (len(self.forbidden) > 0 and v in self.forbidden):
+    def _check_permitted(self, name, value):
+        if (len(self.allowed) > 0 and not value in self.allowed) or (len(self.forbidden) > 0 and value in self.forbidden):
             return False, [str.format('Field "{}" is not a permitted value', name)]
         return True, []
 
-    def _check_instance(self, name, v):
+    def _check_instance(self, name, value):
         return True, []
 
     def is_valid(self, name, value):
@@ -62,7 +62,7 @@ class BoolField(DataField):
     ):
         super().__init__(required, nullable)
 
-    def _check_permitted(self, name, v):
+    def _check_permitted(self, name, value):
         return True, []
 
     def _check_instance(self, name, value):
@@ -100,12 +100,12 @@ class IntegerField(DataField):
         self.min = _min
         self.max = _max
     
-    def _check_instance(self, name, v):
-        if not isinstance(v, int):
+    def _check_instance(self, name, value):
+        if not isinstance(value, int):
             return False, [str.format('Field "{}" must be a int', name)]
         
-        if self.min > v or self.max < v:
-            return False, [str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', v, name, self.min, self.max)]
+        if self.min > value or self.max < value:
+            return False, [str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', value, name, self.min, self.max)]
 
         return True, []
 
@@ -123,17 +123,17 @@ class FloatField(DataField):
         self.min = _min
         self.max = _max
     
-    def _check_instance(self, name, v):
+    def _check_instance(self, name, value):
         errors = []
         result = True
-        if not isinstance(v, float):
+        if not isinstance(value, float):
             result = False
             errors.append(str.format('Field "{}" must be a float', name))
             return result, errors
         
-        if self.min > v or self.max < v:
+        if self.min > value or self.max < value:
             result = False
-            errors.append(str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', v, name, self.min, self.max))
+            errors.append(str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', value, name, self.min, self.max))
 
         return result, errors
 
@@ -160,34 +160,34 @@ class ListField(DataField):
         self.min_length = min_length
         self.max_length = max_length
 
-    def _check_instance(self, name, v):
+    def _check_instance(self, name, value):
         errors = []
         result = True
 
-        if not isinstance(v, list):
+        if not isinstance(value, list):
             result = False
             errors.append(str.format('Field "{}" must be a list', name))
             return result, errors
 
         if len(type_mapping) == 1:
-            for i in v:
+            for i in value:
                 if not isinstance(i, type_mapping[0]):
                     result = False
                     errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type_mapping[0].__name__, name))
         else:
             idx = 0
-            for i in v:
+            for i in value:
                 if not isinstance(i, type_mapping[idx]):
                     result = False
                     errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type_mapping[0].__name__, name))
                 idx = idx + 1
 
-        if len(v) > self.max_length:
+        if len(value) > self.max_length:
             result = False
-            errors.append(str.format('List Field "{}" exceeded its maximum length: {}, with length: {}', name, self.max_length, len(v)))
-        if len(v) < self.min_length:
+            errors.append(str.format('List Field "{}" exceeded its maximum length: {}, with length: {}', name, self.max_length, len(value)))
+        if len(value) < self.min_length:
             result = False
-            errors.append(str.format('List Field "{}" does not satisfy the length requirement: {}, with length: {}', name, self.min_length, len(v)))
+            errors.append(str.format('List Field "{}" does not satisfy the length requirement: {}, with length: {}', name, self.min_length, len(value)))
 
         return result, errors
 
@@ -230,13 +230,13 @@ class ObjectField(DataField):
         super().__init__(required, nullable)
         self.cls = cls
 
-    def _check_instance(self, name, v):
-        if not isinstance(v, self.cls):
+    def _check_instance(self, name, value):
+        if not isinstance(value, self.cls):
             return False, [str.format('Field "{}" must be of type: {}', name, self.cls.__name__)]
 
         errors = []
         result = True
-        subresult, suberrors = v.validate()
+        subresult, suberrors = value.validate()
         if not subresult:
             result = False
             errors.extend(suberrors)
