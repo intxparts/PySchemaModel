@@ -1,6 +1,6 @@
 # PySchemaModel
 
-A python module to provide a class based approach to define JSON schemas with built-in validation and serialization. 
+A python module to provide a class based approach for defining JSON schemas with built-in validation and serialization. 
 
 
 ```python
