@@ -26,14 +26,9 @@ class DataField:
         self.forbidden = forbidden
 
     def _check_permitted(self, name, v):
-        errors = []
-        result = True
-
         if (len(self.allowed) > 0 and not v in self.allowed) or (len(self.forbidden) > 0 and v in self.forbidden):
-            result = False
-            errors.append(str.format('Field "{}" is not a permitted value', name))
-
-        return result, errors
+            return False, [str.format('Field "{}" is not a permitted value', name)]
+        return True, []
 
     def _check_instance(self, name, v):
         return True, []
@@ -71,13 +66,9 @@ class BoolField(DataField):
         return True, []
 
     def _check_instance(self, name, v):
-        errors = []
-        result = True
-
         if not isinstance(v, bool):
-            result = False
-            errors.append(str.format('Field "{}" must be a bool', name))
-        return result, errors
+            return False, [str.format('Field "{}" must be a bool', name)]
+        return True, []
 
 class StringField(DataField):
     def __init__(
@@ -90,13 +81,9 @@ class StringField(DataField):
         super().__init__(required, nullable, allowed, forbidden)
     
     def _check_instance(self, v):
-        errors = []
-        result = True
-
         if not isinstance(v, str):
-            result = False
-            errors.append(str.format('Field "{}" must be a str', name))
-        return result, errors
+            return False, [str.format('Field "{}" must be a str', name)]
+        return True, []
 
 
 class IntegerField(DataField):
@@ -114,18 +101,13 @@ class IntegerField(DataField):
         self.max = _max
     
     def _check_instance(self, name, v):
-        errors = []
-        result = True
         if not isinstance(v, int):
-            result = False
-            errors.append(str.format('Field "{}" must be a int', name))
-            return result, errors
+            return False, [str.format('Field "{}" must be a int', name)]
         
         if self.min > v or self.max < v:
-            result = False
-            errors.append(str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', v, name, self.min, self.max))
+            return False, [str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', v, name, self.min, self.max)]
 
-        return result, errors
+        return True, []
 
 class FloatField(DataField):
     def __init__(
@@ -222,13 +204,11 @@ class DictField(DataField):
         self.value_type = value_type
     
     def _check_instance(self, name, value):
+        if not isinstance(value, dict):
+            return False, [str.format('Field "{}" must be a dict', name)]
+
         errors = []
         result = True
-
-        if not isinstance(value, dict):
-            result = True
-            errors.append(str.format('Field "{}" must be a dict', name))
-            return result, errors
 
         for k, v in value.items():
             if not isinstance(k, self.key_type):
@@ -251,20 +231,17 @@ class ObjectField(DataField):
         self.cls = cls
 
     def _check_instance(self, name, v):
+        if not isinstance(v, self.cls):
+            return False, [str.format('Field "{}" must be of type: {}', name, self.cls.__name__)]
+
         errors = []
         result = True
-        if not isinstance(v, self.cls):
-            result = False
-            errors.append(str.format('Field "{}" must be of type: {}', name, self.cls.__name__))
-            return result, errors
-
         subresult, suberrors = v.validate()
         if not subresult:
             result = False
             errors.extend(suberrors)
         
         return result, errors
-
 
 class ValidationError(Exception):
     def __init__(self, validation_errors):
@@ -308,22 +285,23 @@ class SchemaModel(metaclass=Schema, allow_unknowns=False):
         result = True
         errors = []
         schema = getattr(self, '__schema')
-        keys = self.__dict__.keys()
+        instance_attr_names = self.__dict__.keys()
         for k, v in schema.items():
-            if k in keys:
+            if k in instance_attr_names:
                 subresult, suberrors = v.is_valid(k, self.__dict__[k])
                 if not subresult:
                     result = False
                     errors.extend(suberrors)
             else:
                 if v.required:
-                    errors.append(str.format('required field is missing: {}', k))
                     result = False
+                    errors.append(str.format('required field is missing: {}', k))
         allow_unknowns = getattr(self, '__allow_unknowns')
-        if allow_unknowns:
+        if not allow_unknowns:
             schema_keys = schema.keys()
-            for k in keys:
-                if not k in schema_keys:
+            for attr_name in instance_attr_names:
+                if not attr_name in schema_keys:
+                    result = False
                     errors.append(str.format('unknown fields not permitted, attribute must be defined in schema: {}', k))
 
         return result, errors
@@ -346,6 +324,12 @@ def _instantiate_class(cls, d):
                 obj.__dict__[k] = _instantiate_class(v.cls, d[k])
             else:
                 obj.__dict__[k] = d[k]
+    instance_keys = obj.__dict__.keys()
+
+    # load the remaining dictionary items into the class
+    for k, v in d.items():
+        if not k in instance_keys:
+            obj.__dict__[k] = v
     return obj
 
 def deserialize(cls, json_string):
