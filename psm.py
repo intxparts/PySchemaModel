@@ -33,22 +33,22 @@ class DataField:
     def _check_instance(self, name, v):
         return True, []
 
-    def is_valid(self, name, v):
-        if self.nullable and v == None:
+    def is_valid(self, name, value):
+        if self.nullable and value == None:
             return True, []
 
-        if not self.nullable and v == None:
+        if not self.nullable and value == None:
             return False, [str.format('Field "{}" is not nullable', name)]
 
         errors = []
         result = True
 
-        instance_check, instance_check_errors = self._check_instance(name, v)
+        instance_check, instance_check_errors = self._check_instance(name, value)
         if not instance_check:
             result = False
             errors.extend(instance_check_errors)
 
-        permitted_check, permitted_check_errors = self._check_permitted(name, v)
+        permitted_check, permitted_check_errors = self._check_permitted(name, value)
         if not permitted_check:
             result = False
             errors.extend(permitted_check_errors)
@@ -65,8 +65,8 @@ class BoolField(DataField):
     def _check_permitted(self, name, v):
         return True, []
 
-    def _check_instance(self, name, v):
-        if not isinstance(v, bool):
+    def _check_instance(self, name, value):
+        if not isinstance(value, bool):
             return False, [str.format('Field "{}" must be a bool', name)]
         return True, []
 
@@ -80,8 +80,8 @@ class StringField(DataField):
     ):
         super().__init__(required, nullable, allowed, forbidden)
     
-    def _check_instance(self, v):
-        if not isinstance(v, str):
+    def _check_instance(self, name, value):
+        if not isinstance(value, str):
             return False, [str.format('Field "{}" must be a str', name)]
         return True, []
 
