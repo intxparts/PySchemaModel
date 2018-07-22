@@ -315,13 +315,13 @@ def serialize(obj):
     return json.dumps(obj.to_json_obj())
 
 
-def _instantiate_class(cls, d):
+def _instantiate_schema_model_class(cls, d):
     obj = cls()
     schema = getattr(cls, '__schema')
     for k, v in schema.items():
         if k in d:
             if isinstance(v, ObjectField):
-                obj.__dict__[k] = _instantiate_class(v.cls, d[k])
+                obj.__dict__[k] = _instantiate_schema_model_class(v.cls, d[k])
             else:
                 obj.__dict__[k] = d[k]
     instance_keys = obj.__dict__.keys()
@@ -338,7 +338,7 @@ def deserialize(cls, json_string):
     d = json.loads(json_string)
     # create an instance of the given class
     # populate that instance with the data from the json dict
-    obj = _instantiate_class(cls, d)
+    obj = _instantiate_schema_model_class(cls, d)
 
     result, errors = obj.validate()
     if not result:
