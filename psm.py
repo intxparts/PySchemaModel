@@ -180,7 +180,8 @@ class ListField(DataField):
                 return False, [str.format('List Field "{}" length mismatch between schema and value', name)]
             idx = 0
             for i in value:
-                if not self.type_mapping[idx].is_valid(name, i):
+                subresult, suberrors = self.type_mapping[idx].is_valid(name, i)
+                if not subresult:
                     result = False
                     errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type(self.type_mapping[idx]).__name__, name))
                 idx = idx + 1
