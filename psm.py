@@ -143,12 +143,10 @@ class ListField(DataField):
         type_mapping,
         required = False,
         nullable = False,
-        allowed = [],
-        forbidden = [],
         min_length = 0,
         max_length = _MAX_INT
     ):
-        super().__init__(required, nullable, allowed, forbidden)
+        super().__init__(required, nullable)
         if not isinstance(type_mapping, list):
             raise TypeError('"type_mapping" must be a list of data field types')
         if len(type_mapping) == 0:
@@ -160,26 +158,31 @@ class ListField(DataField):
         self.min_length = min_length
         self.max_length = max_length
 
+    def _check_permitted(self, name, value):
+        return True, []
+
     def _check_instance(self, name, value):
+
+        if not isinstance(value, list):
+            return False, [str.format('Field "{}" must be a list', name)]
+
         errors = []
         result = True
 
-        if not isinstance(value, list):
-            result = False
-            errors.append(str.format('Field "{}" must be a list', name))
-            return result, errors
-
-        if len(type_mapping) == 1:
+        if len(self.type_mapping) == 1:
             for i in value:
-                if not isinstance(i, type_mapping[0]):
+                subresult, suberrors = self.type_mapping[0].is_valid(name, i)
+                if not subresult:
                     result = False
-                    errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type_mapping[0].__name__, name))
+                    errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type(self.type_mapping[0]).__name__, name))
         else:
+            if len(value) != len(self.type_mapping):
+                return False, [str.format('List Field "{}" length mismatch between schema and value', name)]
             idx = 0
             for i in value:
-                if not isinstance(i, type_mapping[idx]):
+                if not self.type_mapping[idx].is_valid(name, i):
                     result = False
-                    errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type_mapping[0].__name__, name))
+                    errors.append(str.format('invalid type: {}, expected: {} for Field "{}"', type(i).__name__, type(self.type_mapping[idx]).__name__, name))
                 idx = idx + 1
 
         if len(value) > self.max_length:
@@ -266,7 +269,6 @@ class Schema(type):
     def __init__(cls, cls_name, bases, namespace, **options):
         super().__init__(cls_name, bases, namespace)
 
-
 class SchemaModel(metaclass=Schema, allow_unknowns=False):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -314,7 +316,6 @@ def serialize(obj):
         raise ValidationError(errors)
     return json.dumps(obj.to_json_obj())
 
-
 def _instantiate_schema_model_class(cls, d):
     obj = cls()
     schema = getattr(cls, '__schema')
@@ -344,4 +345,3 @@ def deserialize(cls, json_string):
     if not result:
         raise ValidationError(errors)
     return obj
-
