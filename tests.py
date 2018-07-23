@@ -649,7 +649,50 @@ class FloatField_tests(unittest.TestCase):
 
 
 class ListField_tests(unittest.TestCase):
-    pass
+    def test_validate_single_element_type(self):
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.BoolField()], required=True)
+        
+        m1 = Model(field=[True, False, True, False, True, False, True, True, True, False])
+        result, errors = m1.validate()
+        self.assertTrue(result)
+        self.assertEqual(0, len(errors))
+
+        m2 = Model(field=[True, 'false'])
+        multiple_types_result, multiple_types_errors = m2.validate()
+        self.assertFalse(multiple_types_result)
+        self.assertEqual(1, len(multiple_types_errors))
+
+    def test_validate_multiple_element_types(self):
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.BoolField(), psm.StringField(), psm.IntegerField(nullable=True)])
+
+        m1 = Model(field=[True, 'Str', 10])
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
+
+        m2 = Model(field=[True, 'Str', None])
+        m2_result, m2_errors = m2.validate()
+        self.assertTrue(m2_result)
+        self.assertEqual(0, len(m2_errors))
+
+        m3 = Model(field=[True, 'str', -1, 15])
+        m3_result, m3_errors = m3.validate()
+        self.assertFalse(m3_result)
+        self.assertEqual(1, len(m3_errors))
+
+    def test_min_length(self):
+        pass
+
+    def test_max_length(self):
+        pass
+
+    def test_list_of_objects(self):
+        pass
+
+    def test_list_of_lists(self):
+        pass
 
 class DictField_tests(unittest.TestCase):
     pass
