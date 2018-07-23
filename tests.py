@@ -682,6 +682,11 @@ class ListField_tests(unittest.TestCase):
         self.assertFalse(m3_result)
         self.assertEqual(1, len(m3_errors))
 
+        m4 = Model(field=[False, True, 1.2])
+        m4_result, m4_errors = m4.validate()
+        self.assertFalse(m4_result)
+        self.assertGreaterEqual(len(m4_errors), 1)
+
     def test_min_length(self):
         pass
 
