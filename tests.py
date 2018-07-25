@@ -782,10 +782,33 @@ class ListField_tests(unittest.TestCase):
         self.assertFalse(m2_result)
         self.assertEqual(1, len(m2_errors))
 
-class DictField_tests(unittest.TestCase):
-    pass
-
 class ObjectField_tests(unittest.TestCase):
+    def test_validation_class(self):
+        class Model1(psm.SchemaModel):
+            field = psm.StringField()
+
+        class Model2(psm.SchemaModel):
+            obj_field = psm.ObjectField(Model1)
+
+        m1 = Model2(obj_field=Model1(field='greeting'))
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
+
+        class Model3(psm.SchemaModel):
+            field = psm.StringField()
+
+        m2 = Model2(obj_field=Model3(field='greeting'))
+        m2_result, m2_errors = m2.validate()
+        self.assertFalse(m2_result)
+        self.assertEqual(1, len(m2_errors))
+
+        m3 = Model3(obj_field='greeting')
+        m3_result, m3_errors = m3.validate()
+        self.assertFalse(m3_result)
+        self.assertEqual(1, len(m3_errors))
+
+class DictField_tests(unittest.TestCase):
     pass
 
 class Complex_tests(unittest.TestCase):

@@ -226,7 +226,7 @@ class DictField(DataField):
 
 class ObjectField(DataField):
     def __init__(
-        self, 
+        self,
         cls,
         required = False,
         nullable = False
