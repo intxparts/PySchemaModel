@@ -79,7 +79,7 @@ class StringField(DataField):
         forbidden = []
     ):
         super().__init__(required, nullable, allowed, forbidden)
-    
+
     def _check_instance(self, name, value):
         if not isinstance(value, str):
             return False, [str.format('Field "{}" must be a str', name)]
@@ -99,11 +99,11 @@ class IntegerField(DataField):
         super().__init__(required, nullable, allowed, forbidden)
         self.min = _min
         self.max = _max
-    
+
     def _check_instance(self, name, value):
         if not isinstance(value, int):
             return False, [str.format('Field "{}" must be a int', name)]
-        
+
         if self.min > value or self.max < value:
             return False, [str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', value, name, self.min, self.max)]
 
@@ -122,7 +122,7 @@ class FloatField(DataField):
         super().__init__(required, nullable, allowed, forbidden)
         self.min = _min
         self.max = _max
-    
+
     def _check_instance(self, name, value):
         errors = []
         result = True
@@ -130,7 +130,7 @@ class FloatField(DataField):
             result = False
             errors.append(str.format('Field "{}" must be a float', name))
             return result, errors
-        
+
         if self.min > value or self.max < value:
             result = False
             errors.append(str.format('Value out of bounds: {}. Field "{}" must be within bounds [{}, {}]', value, name, self.min, self.max))
@@ -206,7 +206,7 @@ class DictField(DataField):
         super().__init__(required, nullable)
         self.key_type = key_type
         self.value_type = value_type
-    
+
     def _check_instance(self, name, value):
         if not isinstance(value, dict):
             return False, [str.format('Field "{}" must be a dict', name)]
@@ -244,7 +244,7 @@ class ObjectField(DataField):
         if not subresult:
             result = False
             errors.extend(suberrors)
-        
+
         return result, errors
 
 class ValidationError(Exception):

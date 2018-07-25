@@ -13,7 +13,7 @@ class BoolField_tests(unittest.TestCase):
     def test_validation_required_enabled(self):
         class Model(psm.SchemaModel):
             field = psm.BoolField(required=True)
-        
+
         m1 = Model()
         missing_result, missing_errors = m1.validate()
         self.assertFalse(missing_result)
@@ -36,7 +36,7 @@ class BoolField_tests(unittest.TestCase):
     def test_validation_nullable_bool(self):
         class Model(psm.SchemaModel):
             field = psm.BoolField(nullable=True)
-        
+
         m1 = Model(field=None)
         null_result, null_errors = m1.validate()
         self.assertTrue(null_result)
@@ -50,7 +50,7 @@ class BoolField_tests(unittest.TestCase):
     def test_validation_nonnullable_bool(self):
         class Model(psm.SchemaModel):
             field = psm.BoolField(nullable=False)
-        
+
         m1 = Model(field=None)
         null_result, null_errors = m1.validate()
         self.assertFalse(null_result)
@@ -64,7 +64,7 @@ class BoolField_tests(unittest.TestCase):
     def test_serialize_nullable_bool(self):
         class Model(psm.SchemaModel):
             field = psm.BoolField(nullable=True)
-        
+
         m1 = Model(field=None)
         m1_str = psm.serialize(m1)
         self.assertEqual('{"field": null}', m1_str)
@@ -101,7 +101,7 @@ class BoolField_tests(unittest.TestCase):
     def test_serialize_bool(self):
         class Model(psm.SchemaModel):
             field = psm.BoolField(nullable=False)
-        
+
         m1 = Model(field=None)
         with self.assertRaises(psm.ValidationError):
             psm.serialize(m1)
@@ -154,7 +154,7 @@ class StringField_tests(unittest.TestCase):
     def test_validation_nullable_string(self):
         class Model(psm.SchemaModel):
             field = psm.StringField(nullable=True)
-        
+
         m1 = Model(field=None)
         null_result, null_errors = m1.validate()
         self.assertTrue(null_result)
@@ -168,7 +168,7 @@ class StringField_tests(unittest.TestCase):
     def test_validation_nonnullable_string(self):
         class Model(psm.SchemaModel):
             field = psm.StringField(nullable=False)
-        
+
         m1 = Model(field=None)
         null_result, null_errors = m1.validate()
         self.assertFalse(null_result)
@@ -202,7 +202,7 @@ class StringField_tests(unittest.TestCase):
     def test_validation_forbidden(self):
         class Model(psm.SchemaModel):
             field = psm.StringField(forbidden=['square', 'circle'])
-        
+
         m1 = Model(field='str')
         valid_str_result, valid_str_errors = m1.validate()
         self.assertTrue(valid_str_result)
@@ -221,7 +221,7 @@ class StringField_tests(unittest.TestCase):
     def test_serialize_nullable_string(self):
         class Model(psm.SchemaModel):
             field = psm.StringField(nullable=True)
-        
+
         m1 = Model(field=None)
         m1_str = psm.serialize(m1)
         self.assertEqual('{"field": null}', m1_str)
@@ -237,7 +237,7 @@ class StringField_tests(unittest.TestCase):
     def test_serialize_nonnullable_string(self):
         class Model(psm.SchemaModel):
             field = psm.StringField(nullable=False)
-        
+
         m1 = Model(field=None)
         with self.assertRaises(psm.ValidationError):
             psm.serialize(m1)
@@ -345,7 +345,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_validation_allowed(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(allowed=[1, 2, 3, 5, 7, 11, 13])
-        
+
         m1 = Model(field=8)
         na_result, na_errors = m1.validate()
         self.assertFalse(na_result)
@@ -359,7 +359,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_validation_forbidden(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(forbidden=[1, 2, 3, 5, 7, 11, 13])
-        
+
         m1 = Model(field=8)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -373,7 +373,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_validation_min(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(_min=-1)
-        
+
         m1 = Model(field = 0)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -392,7 +392,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_validation_max(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(_max=10)
-        
+
         m1 = Model(field = 9)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -439,7 +439,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_deserialize_nullable(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(nullable=True)
-        
+
         m1 = psm.deserialize(Model, '{"field": null}')
         self.assertEqual(None, m1.field)
 
@@ -458,7 +458,7 @@ class IntegerField_tests(unittest.TestCase):
     def test_deserialize_nonnullable(self):
         class Model(psm.SchemaModel):
             field = psm.IntegerField(nullable=False)
-        
+
         with self.assertRaises(psm.ValidationError):
             psm.deserialize(Model, '{"field": null}')
 
@@ -527,7 +527,7 @@ class FloatField_tests(unittest.TestCase):
     def test_validation_allowed(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(allowed=[1.1, 2.2, 3.3, 5.5])
-        
+
         m1 = Model(field=-1.2)
         na_result, na_errors = m1.validate()
         self.assertFalse(na_result)
@@ -541,7 +541,7 @@ class FloatField_tests(unittest.TestCase):
     def test_validation_forbidden(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(forbidden=[1.1, 2.2, 3.3, 5.5])
-        
+
         m1 = Model(field=8.5)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -555,7 +555,7 @@ class FloatField_tests(unittest.TestCase):
     def test_validation_min(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(_min=-1.34)
-        
+
         m1 = Model(field = -1.33)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -574,7 +574,7 @@ class FloatField_tests(unittest.TestCase):
     def test_validation_max(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(_max=10.12)
-        
+
         m1 = Model(field = 10.1)
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -621,7 +621,7 @@ class FloatField_tests(unittest.TestCase):
     def test_deserialize_nullable(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(nullable=True)
-        
+
         m1 = psm.deserialize(Model, '{"field": null}')
         self.assertEqual(None, m1.field)
 
@@ -640,7 +640,7 @@ class FloatField_tests(unittest.TestCase):
     def test_deserialize_nonnullable(self):
         class Model(psm.SchemaModel):
             field = psm.FloatField(nullable=False)
-        
+
         with self.assertRaises(psm.ValidationError):
             psm.deserialize(Model, '{"field": null}')
 
@@ -652,7 +652,7 @@ class ListField_tests(unittest.TestCase):
     def test_validate_single_element_type(self):
         class Model(psm.SchemaModel):
             field = psm.ListField([psm.BoolField()], required=True)
-        
+
         m1 = Model(field=[True, False, True, False, True, False, True, True, True, False])
         result, errors = m1.validate()
         self.assertTrue(result)
@@ -688,16 +688,99 @@ class ListField_tests(unittest.TestCase):
         self.assertGreaterEqual(len(m4_errors), 1)
 
     def test_min_length(self):
-        pass
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.StringField()], min_length=1)
+
+        m1 = Model(field=[])
+        m1_result, m1_errors = m1.validate()
+        self.assertFalse(m1_result)
+        self.assertEqual(1, len(m1_errors))
+
+        m2 = Model(field=['hello'])
+        m2_result, m2_errors = m2.validate()
+        self.assertTrue(m2_result)
+        self.assertEqual(0, len(m2_errors))
+
+        m3 = Model(field=['hello', 'goodbye'])
+        m3_result, m3_errors = m3.validate()
+        self.assertTrue(m3_result)
+        self.assertEqual(0, len(m3_errors))
 
     def test_max_length(self):
-        pass
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.IntegerField()], max_length=3)
+
+        m1 = Model(field=[])
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
+
+        m2 = Model(field=[1, 2, 3])
+        m2_result, m2_errors = m2.validate()
+        self.assertTrue(m2_result)
+        self.assertEqual(0, len(m2_errors))
+
+        m3 = Model(field = [1, 2, 3, 4])
+        m3_result, m3_errors = m3.validate()
+        self.assertFalse(m3_result)
+        self.assertEqual(1, len(m3_errors))
+
+    def test_fixed_length(self):
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.IntegerField()], min_length=2, max_length=2)
+
+        m1 = Model(field=[0])
+        m1_result, m1_errors = m1.validate()
+        self.assertFalse(m1_result)
+        self.assertEqual(1, len(m1_errors))
+
+        m2 = Model(field=[0, 1])
+        m2_result, m2_errors = m2.validate()
+        self.assertTrue(m2_result)
+        self.assertEqual(0, len(m2_errors))
+
+        m3 = Model(field=[0, 1, 2])
+        m3_result, m3_errors = m3.validate()
+        self.assertFalse(m3_result)
+        self.assertEqual(1, len(m3_errors))
 
     def test_list_of_objects(self):
-        pass
+        class SubModel(psm.SchemaModel):
+            data = psm.IntegerField()
+
+        class Model(psm.SchemaModel):
+            field = psm.ListField([psm.ObjectField(SubModel)])
+
+        m1 = Model(field=[SubModel(data=1), SubModel(data=5)])
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
 
     def test_list_of_lists(self):
-        pass
+        class Model(psm.SchemaModel):
+            matrix = psm.ListField([psm.ListField([psm.IntegerField()])])
+
+        m1 = Model(matrix=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
+
+    def test_list_of_objects_with_list(self):
+        class Transformation(psm.SchemaModel):
+            offset = psm.ListField([psm.IntegerField()], min_length=3, max_length=3)
+
+        class Model(psm.SchemaModel):
+            transformations = psm.ListField([psm.ObjectField(Transformation)])
+
+        m1 = Model(transformations=[Transformation(offset=[1, 1, 0]), Transformation(offset=[0, 1, 2])])
+        m1_result, m1_errors = m1.validate()
+        self.assertTrue(m1_result)
+        self.assertEqual(0, len(m1_errors))
+
+        m2 = Model(transformations=[Transformation(offset=[1, 1])])
+        m2_result, m2_errors = m2.validate()
+        self.assertFalse(m2_result)
+        self.assertEqual(1, len(m2_errors))
 
 class DictField_tests(unittest.TestCase):
     pass
