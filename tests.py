@@ -687,7 +687,7 @@ class ListField_tests(unittest.TestCase):
         self.assertFalse(m4_result)
         self.assertGreaterEqual(len(m4_errors), 1)
 
-    def test_min_length(self):
+    def test_validate_min_length(self):
         class Model(psm.SchemaModel):
             field = psm.ListField([psm.StringField()], min_length=1)
 
@@ -706,7 +706,7 @@ class ListField_tests(unittest.TestCase):
         self.assertTrue(m3_result)
         self.assertEqual(0, len(m3_errors))
 
-    def test_max_length(self):
+    def test_validate_max_length(self):
         class Model(psm.SchemaModel):
             field = psm.ListField([psm.IntegerField()], max_length=3)
 
@@ -725,7 +725,7 @@ class ListField_tests(unittest.TestCase):
         self.assertFalse(m3_result)
         self.assertEqual(1, len(m3_errors))
 
-    def test_fixed_length(self):
+    def test_validate_fixed_length(self):
         class Model(psm.SchemaModel):
             field = psm.ListField([psm.IntegerField()], min_length=2, max_length=2)
 
@@ -744,7 +744,7 @@ class ListField_tests(unittest.TestCase):
         self.assertFalse(m3_result)
         self.assertEqual(1, len(m3_errors))
 
-    def test_list_of_objects(self):
+    def test_validate_list_of_objects(self):
         class SubModel(psm.SchemaModel):
             data = psm.IntegerField()
 
@@ -756,7 +756,7 @@ class ListField_tests(unittest.TestCase):
         self.assertTrue(m1_result)
         self.assertEqual(0, len(m1_errors))
 
-    def test_list_of_lists(self):
+    def test_validate_list_of_lists(self):
         class Model(psm.SchemaModel):
             matrix = psm.ListField([psm.ListField([psm.IntegerField()])])
 
@@ -765,7 +765,7 @@ class ListField_tests(unittest.TestCase):
         self.assertTrue(m1_result)
         self.assertEqual(0, len(m1_errors))
 
-    def test_list_of_objects_with_list(self):
+    def test_validate_list_of_objects_with_list(self):
         class Transformation(psm.SchemaModel):
             offset = psm.ListField([psm.IntegerField()], min_length=3, max_length=3)
 
@@ -781,6 +781,147 @@ class ListField_tests(unittest.TestCase):
         m2_result, m2_errors = m2.validate()
         self.assertFalse(m2_result)
         self.assertEqual(1, len(m2_errors))
+
+    def test_serialize_list_of_integers(self):
+        class Model(psm.SchemaModel):
+            indices = psm.ListField([psm.IntegerField()])
+        
+        m1 = Model(indices=[1,8,9,101])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"indices": [1, 8, 9, 101]}', m1_str)
+
+    def test_serialize_list_of_lists(self):
+        class Transformation(psm.SchemaModel):
+            m = psm.ListField([ psm.ListField([psm.IntegerField()]) ])
+        
+        m1 = Transformation(m=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"m": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}', m1_str)
+
+
+    def test_serialize_list_of_objects(self):
+        class Vector(psm.SchemaModel):
+            x = psm.IntegerField(required=True, nullable=False)
+            y = psm.IntegerField(required=True, nullable=False)
+            z = psm.IntegerField(required=True, nullable=False)
+
+        class Model(psm.SchemaModel):
+            vectors = psm.ListField([psm.ObjectField(Vector)])
+
+        m1 = Model(vectors=[Vector(x=1, y=0, z=0), Vector(x=0, y=1, z=0), Vector(x=0, y=0, z=1)])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"vectors": [{"x": 1, "y": 0, "z": 0}, {"x": 0, "y": 1, "z": 0}, {"x": 0, "y": 0, "z": 1}]}', m1_str)
+
+
+    def test_serialize_list_of_objects_with_list(self):
+        class Vector(psm.SchemaModel):
+            u = psm.ListField([psm.IntegerField()], min_length=3, max_length=3)
+
+        class Model(psm.SchemaModel):
+            vectors = psm.ListField([psm.ObjectField(Vector)])
+
+        m1 = Model(vectors=[Vector(u=[1, 0, 0]), Vector(u=[0, 1, 0]), Vector(u=[0, 0, 1])])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"vectors": [{"u": [1, 0, 0]}, {"u": [0, 1, 0]}, {"u": [0, 0, 1]}]}', m1_str)
+
+    def test_serialize_mixed_list(self):
+        class SubModel(psm.SchemaModel):
+            data = psm.ListField([psm.BoolField()])
+
+        class Model(psm.SchemaModel):
+            bag = psm.ListField([
+                psm.IntegerField(), 
+                psm.ListField([psm.ObjectField(SubModel)])
+            ])
+        
+        m1 = Model(bag=[
+            1,
+            [
+                SubModel(data=[True, False]),
+                SubModel(data=[True, True, False, False])
+            ]
+        ])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"bag": [1, [{"data": [true, false]}, {"data": [true, true, false, false]}]]}', m1_str)
+    
+    def test_deserialize_list_of_integers(self):
+        class Model(psm.SchemaModel):
+            indices = psm.ListField([psm.IntegerField()])
+        
+        m1 = Model(indices=[1,8,9,101])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"indices": [1, 8, 9, 101]}', m1_str)
+
+    def test_deserialize_list_of_lists(self):
+        class Transformation(psm.SchemaModel):
+            m = psm.ListField([ psm.ListField([psm.IntegerField()]) ])
+        
+        m1 = Transformation(m=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"m": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}', m1_str)
+
+    def test_deserialize_list_of_objects(self):
+        class Vector(psm.SchemaModel):
+            x = psm.IntegerField(required=True, nullable=False)
+            y = psm.IntegerField(required=True, nullable=False)
+            z = psm.IntegerField(required=True, nullable=False)
+
+        class Model(psm.SchemaModel):
+            vectors = psm.ListField([psm.ObjectField(Vector)])
+
+        m1 = psm.deserialize(Model, '{"vectors": [{"x": 1, "y": 0, "z": 0}, {"x": 0, "y": 1, "z": 0}, {"x": 0, "y": 0, "z": 1}]}')
+        self.assertIsInstance(m1, Model)
+        self.assertIsInstance(m1.vectors, list)
+        self.assertEqual(len(m1.vectors), 3)
+        for v in m1.vectors:
+            self.assertIsInstance(v, Vector)
+        
+        self.assertTrue(m1.vectors[0].x == 1 and m1.vectors[0].y == 0 and m1.vectors[0].z == 0)
+        self.assertTrue(m1.vectors[1].x == 0 and m1.vectors[1].y == 1 and m1.vectors[1].z == 0)
+        self.assertTrue(m1.vectors[2].x == 0 and m1.vectors[2].y == 0 and m1.vectors[2].z == 1)
+
+    def test_deserialize_list_of_objects_with_list(self):
+        class Vector(psm.SchemaModel):
+            u = psm.ListField([psm.IntegerField()], min_length=3, max_length=3)
+
+        class Model(psm.SchemaModel):
+            vectors = psm.ListField([psm.ObjectField(Vector)])
+
+        m1 = Model(vectors=[Vector(u=[1, 0, 0]), Vector(u=[0, 1, 0]), Vector(u=[0, 0, 1])])
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"vectors": [{"u": [1, 0, 0]}, {"u": [0, 1, 0]}, {"u": [0, 0, 1]}]}', m1_str)
+
+    def test_deserialize_mixed_list(self):
+        class SubModel(psm.SchemaModel):
+            data = psm.ListField([psm.BoolField()])
+
+        class Model(psm.SchemaModel):
+            bag = psm.ListField([
+                psm.IntegerField(), 
+                psm.ListField([psm.ObjectField(SubModel)])
+            ])
+        
+        m1 = psm.deserialize(Model, '{"bag": [1, [{"data": [true, false]}, {"data": [true, true, false]}]]}')
+        self.assertIsInstance(m1, Model)
+        self.assertIsInstance(m1.bag, list)
+        self.assertIsInstance(m1.bag[0], int)
+        self.assertEqual(m1.bag[0], 1)
+        self.assertIsInstance(m1.bag[1], list)
+        self.assertEqual(len(m1.bag[1]), 2)
+        for i in m1.bag[1]:
+            self.assertIsInstance(i, SubModel)
+            self.assertIsInstance(i.data, list)
+
+        self.assertEqual(len(m1.bag[1][0].data), 2)
+        self.assertEqual(m1.bag[1][0].data[0], True)
+        self.assertEqual(m1.bag[1][0].data[1], False)
+
+        self.assertEqual(len(m1.bag[1][1].data), 3)
+        self.assertEqual(m1.bag[1][1].data[0], True)
+        self.assertEqual(m1.bag[1][1].data[1], True)
+        self.assertEqual(m1.bag[1][1].data[2], False)
+
+    
 
 class ObjectField_tests(unittest.TestCase):
     def test_validation_class(self):
@@ -807,9 +948,6 @@ class ObjectField_tests(unittest.TestCase):
         m3_result, m3_errors = m3.validate()
         self.assertFalse(m3_result)
         self.assertEqual(1, len(m3_errors))
-
-class DictField_tests(unittest.TestCase):
-    pass
 
 class Complex_tests(unittest.TestCase):
     pass
