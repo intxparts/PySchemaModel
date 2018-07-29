@@ -20,12 +20,6 @@ class Statistics(SchemaModel, allow_unknowns=False):
         nullable=False,
         max_length=50
     )
-    infractions = DictField(
-        key_type = StringField(required=True, nullable=False),
-        value_type = IntegerField(required=True, nullable=False),
-        required = True,
-        nullable = True
-    )
 
 class BotStatistics(Statistics):
     servers_visited = IntegerField(required=True, nullable=False)
@@ -48,8 +42,7 @@ def create_new_player(email, username):
         level = 0,
         xp_collected = 0,
         time_played = 0.0,
-        achievements = [],
-        infractions = None
+        achievements = []
     )
 
     new_player_account = Account(
@@ -71,6 +64,6 @@ print(new_player_str)
 
 new_player_stats_str = serialize(new_player.accounts[0].stats)
 
-# {"level": 0, "xp_collected": 0, "time_played": 0.0, "achievements": [], "infractions": null}
+# {"level": 0, "xp_collected": 0, "time_played": 0.0, "achievements": []}
 print(new_player_stats_str)
 
