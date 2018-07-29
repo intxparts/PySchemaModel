@@ -195,35 +195,6 @@ class ListField(DataField):
 
         return result, errors
 
-class DictField(DataField):
-    def __init__(
-        self,
-        key_type,
-        value_type,
-        required = False,
-        nullable = False
-    ):
-        super().__init__(required, nullable)
-        self.key_type = key_type
-        self.value_type = value_type
-
-    def _check_instance(self, name, value):
-        if not isinstance(value, dict):
-            return False, [str.format('Field "{}" must be a dict', name)]
-
-        errors = []
-        result = True
-
-        for k, v in value.items():
-            if not isinstance(k, self.key_type):
-                result = False
-                errors.append(str.format('key type: {} for Field "{}" must be of type: {}', type(k).__name__, name, type(key_type).__name__))
-            if not isinstance(v, self.value_type):
-                result = False
-                errors.append(str.format('value type: {} for Field "{}" must be of type: {}', type(v).__name__, name, type(value_type).__name__))
-
-        return result, errors
-
 class ObjectField(DataField):
     def __init__(
         self,
@@ -275,19 +246,24 @@ class SchemaModel(metaclass=Schema, allow_unknowns=False):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+    def _list_to_json_obj(self, v):
+        list_of_models = []
+        for i in v:
+            if isinstance(i, SchemaModel):
+                list_of_models.append(i.to_json_obj())
+            elif isinstance(i, list):
+                list_of_models.append(self._list_to_json_obj(i))
+            else:
+                list_of_models.append(i)
+        return list_of_models
+
     def to_json_obj(self):
         d = {}
         for k, v in self.__dict__.items():
             if isinstance(v, SchemaModel):
                 d[k] = v.to_json_obj()
             elif isinstance(v, list):
-                list_of_models = []
-                for i in v:
-                    if isinstance(i, SchemaModel):
-                        list_of_models.append(i.to_json_obj())
-                    else:
-                        list_of_models.append(i)
-                d[k] = list_of_models
+                d[k] = self._list_to_json_obj(v)
             else:
                 d[k] = v
         return d
@@ -323,22 +299,68 @@ def serialize(obj):
     result, errors = obj.validate()
     if not result:
         raise ValidationError(errors)
-    print(obj.to_json_obj())
     return json.dumps(obj.to_json_obj())
 
-def _instantiate_schema_model_class(cls, d):
+def _instantiate_list_field(list_schema_obj, list_obj):
+    populated_list = []
+    if len(list_schema_obj.type_mapping) == 1:
+        for item in list_obj:
+            if isinstance(list_schema_obj.type_mapping[0], ObjectField):
+                populated_list.append(
+                    _instantiate_obj_field(
+                        list_schema_obj.type_mapping[0].cls,
+                        item
+                    )
+                )
+            else:
+                populated_list.append(item)
+    else:
+        # multiple types for the list, fixed length
+        if len(list_schema_obj.type_mapping) != len(list_obj):
+            raise TypeError(str.format('list does not match the defined ListField\'s type_mapping schema'))
+        
+        idx = 0
+        for type_obj in list_schema_obj.type_mapping:
+            if isinstance(type_obj, ObjectField):
+                populated_list.append(
+                    _instantiate_obj_field(
+                        type_obj.cls,
+                        list_obj[idx]
+                    )
+                )
+            elif isinstance(type_obj, ListField):
+                populated_list.append(
+                    _instantiate_list_field(
+                        type_obj,
+                        list_obj[idx]
+                    )
+                )
+            else:
+                populated_list.append(list_obj[idx])
+            idx = idx + 1
+    return populated_list    
+
+def _instantiate_obj_field(cls, data_dict):
     obj = cls()
     schema = getattr(cls, '__schema')
-    for k, v in schema.items():
-        if k in d:
-            if isinstance(v, ObjectField):
-                obj.__dict__[k] = _instantiate_schema_model_class(v.cls, d[k])
+    for schema_key, schema_obj in schema.items():
+        if schema_key in data_dict:
+            if isinstance(schema_obj, ObjectField):
+                obj.__dict__[schema_key] = _instantiate_obj_field(
+                    schema_obj.cls,
+                    data_dict[schema_key]
+                )
+            elif isinstance(schema_obj, ListField):
+                obj.__dict__[schema_key] = _instantiate_list_field(
+                    schema_obj,
+                    data_dict[schema_key]
+                )
             else:
-                obj.__dict__[k] = d[k]
+                obj.__dict__[schema_key] = data_dict[schema_key]
     instance_keys = obj.__dict__.keys()
 
     # load the remaining dictionary items into the class
-    for k, v in d.items():
+    for k, v in data_dict.items():
         if not k in instance_keys:
             obj.__dict__[k] = v
     return obj
@@ -349,8 +371,7 @@ def deserialize(cls, json_string):
     d = json.loads(json_string)
     # create an instance of the given class
     # populate that instance with the data from the json dict
-    obj = _instantiate_schema_model_class(cls, d)
-
+    obj = _instantiate_obj_field(cls, d)
     result, errors = obj.validate()
     if not result:
         raise ValidationError(errors)
