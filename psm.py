@@ -280,6 +280,14 @@ class SchemaModel(metaclass=Schema, allow_unknowns=False):
         for k, v in self.__dict__.items():
             if isinstance(v, SchemaModel):
                 d[k] = v.to_json_obj()
+            elif isinstance(v, list):
+                list_of_models = []
+                for i in v:
+                    if isinstance(i, SchemaModel):
+                        list_of_models.append(i.to_json_obj())
+                    else:
+                        list_of_models.append(i)
+                d[k] = list_of_models
             else:
                 d[k] = v
         return d
@@ -315,6 +323,7 @@ def serialize(obj):
     result, errors = obj.validate()
     if not result:
         raise ValidationError(errors)
+    print(obj.to_json_obj())
     return json.dumps(obj.to_json_obj())
 
 def _instantiate_schema_model_class(cls, d):
