@@ -312,12 +312,19 @@ def _instantiate_list_field(list_schema_obj, list_obj):
                         item
                     )
                 )
+            elif isinstance(list_schema_obj.type_mapping[0], ListField):
+                populated_list.append(
+                    _instantiate_list_field(
+                        list_schema_obj.type_mapping[0],
+                        item
+                    )
+                )
             else:
                 populated_list.append(item)
     else:
         # multiple types for the list, fixed length
         if len(list_schema_obj.type_mapping) != len(list_obj):
-            raise TypeError(str.format('list does not match the defined ListField\'s type_mapping schema'))
+            raise TypeError('list does not match the defined ListField\'s type_mapping schema')
         
         idx = 0
         for type_obj in list_schema_obj.type_mapping:
