@@ -952,10 +952,8 @@ class ListField_tests(unittest.TestCase):
         with self.assertRaises(TypeError):
             psm.deserialize(Model, m1)
 
-
-
 class ObjectField_tests(unittest.TestCase):
-    def test_validation_class(self):
+    def test_validation_obj_of_obj(self):
         class Model1(psm.SchemaModel):
             field = psm.StringField()
 
@@ -979,6 +977,29 @@ class ObjectField_tests(unittest.TestCase):
         m3_result, m3_errors = m3.validate()
         self.assertFalse(m3_result)
         self.assertEqual(1, len(m3_errors))
+
+    def test_serialize_obj_of_objs(self):
+        class SubModel(psm.SchemaModel):
+            field = psm.StringField()
+
+        class Model(psm.SchemaModel):
+            obj_field = psm.ObjectField(SubModel)
+
+        m1 = Model(obj_field=SubModel(field='greetings'))
+        m1_str = psm.serialize(m1)
+        self.assertEqual('{"obj_field": {"field": "greetings"}}', m1_str)
+
+    def test_deserialize_obj_of_objs(self):
+        class SubModel(psm.SchemaModel):
+            field = psm.StringField()
+
+        class Model(psm.SchemaModel):
+            obj_field = psm.ObjectField(SubModel)
+
+        m1 = psm.deserialize(Model, '{"obj_field": {"field": "greetings"}}')
+        self.assertIsInstance(m1, Model)
+        self.assertIsInstance(m1.obj_field, SubModel)
+        self.assertEqual(m1.obj_field.field, 'greetings')
 
 if __name__ == '__main__':
     unittest.main()
